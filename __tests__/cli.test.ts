@@ -301,7 +301,11 @@ describe('CLI', () => {
     it('fails by default', async () => {
       const cli = new CLIMock().args(cliArgs).run();
       expect(await cli.exitCode).toBe(1);
-      expect(JSON.parse(cli.output()).journey).toEqual(
+      const errorStatus = cli
+        .buffer()
+        .map(data => JSON.parse(data))
+        .find(({ type }) => type === 'journey/end');
+      expect(errorStatus?.journey).toEqual(
         expect.objectContaining({ status: 'failed' })
       );
     });
@@ -311,7 +315,11 @@ describe('CLI', () => {
         .args(cliArgs.concat('--ignore-https-errors'))
         .run();
       expect(await cli.exitCode).toBe(0);
-      expect(JSON.parse(cli.output()).journey).toEqual(
+      const successStatus = cli
+        .buffer()
+        .map(data => JSON.parse(data))
+        .find(({ type }) => type === 'journey/end');
+      expect(successStatus?.journey).toEqual(
         expect.objectContaining({ status: 'succeeded' })
       );
     });
@@ -428,9 +436,9 @@ describe('CLI', () => {
           '--config',
           join(FIXTURES_DIR, 'synthetics.config.ts'),
           '--playwright-options',
-          JSON.stringify({ 
+          JSON.stringify({
             ...devices['iPad Pro 11'],
-          })
+          }),
         ])
         .run();
       await cli.waitFor('step/end');
